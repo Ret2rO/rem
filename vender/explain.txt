@@ -1,0 +1,2 @@
+java MyRead xxxx.tar.gz d{aaa}
+tar -xzvf xxx.tar.gz
