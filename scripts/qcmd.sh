@@ -35,7 +35,7 @@ fi
 
 logFile=$path/log/execute.log
 seq=0
-threadFlag="qcmdflag"
+threadFlag="qcmdflag"$(whoami)$(date +%s)
 
 ############ function ############### 
 
@@ -49,10 +49,52 @@ isDone()
 	fi
 }
 
+width=`stty size| awk '{print $2}'`
+width=$(($width-12))
+line=$(seq $width| awk '{print "#"}' | tr '\n' ','| sed 's/,//g')
+
 progress()
 {
-	echo -en "\b\b\b\b\b\b\b\b\b\b\b\b\b\bprogress: "`echo $1*100/$2 | bc `'%'
+    index=`echo $1*100/$2 | bc`
+    len=`echo $1*$width/$2|bc`
+    printf "[%-${width}s][%d%%]\r" "${line:0:$len}" "$index"
 }
+
+
+printResult()
+{
+        cd $path/log/
+        cat $(ls -a | grep .lin | sort -t'.'  -k3,3 -n)
+        cd $path
+}
+
+
+
+#依赖脚本
+if [[ ! -f $path/_cmd.sh ]]; then
+cat << EOF > $path/_cmd.sh
+#!/bin/bash
+
+# \$1: host
+# \$2: cmd
+
+echo "====== [\${1}] ======"
+if [[ -f \$2 ]]; then
+        ssh -o ConnectTimeout=10 root@\$1 < \${2}  2>/dev/null
+else
+        cmd="ssh -o ConnectTimeout=10 root@\$1 \"\${2}\"  2>/dev/null"
+        eval \$cmd
+fi
+echo "--------------------"
+echo "                    "
+EOF
+fi
+
+#执行权限
+if [[ ! -x $path/_cmd.sh ]]; then
+        chmod a+x $path/_cmd.sh
+fi
+
 
 ############ main script #############
 {
@@ -105,7 +147,7 @@ progress()
 
 		if [[ -z "$list" ]]; then
 				echo " "
-				cat $path/log/.t*
+				printResult
 				break
 		fi
 
@@ -115,7 +157,7 @@ progress()
 
 		if [[ $seq -gt 30 ]]; then
 			echo "******* timeout *******"
-			cat $path/log/.t*
+			printResult
 			
 			# kill
 			for j in $task_list
