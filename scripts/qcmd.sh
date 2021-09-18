@@ -12,13 +12,13 @@
 
 cmd=$1
 hosts=$2
-exclu=$3
 
 
 if [[ -z "$cmd" || -z "$hosts" ]]; then
 	echo "param error, command $cmd $hosts.file excluKeyWord"
 	exit 1
 fi
+
 
 # define your home path
 homepath=""
@@ -32,16 +32,16 @@ if [[ ! -d "$path/log" ]]; then
 	mkdir -p $path/log
 fi
 
-
 logFile=$path/log/execute.log
 seq=0
 threadFlag="qcmdflag"$(whoami)$(date +%s)
+
 
 ############ function ############### 
 
 isDone()
 {
-	a=$(ps -ef| grep $1 | grep $threadFlag )
+	a=$(ps -ef| awk '{print $2}' | grep $1 )
 	if [[ -z $a ]]; then
 		return 0
 	else
@@ -57,43 +57,41 @@ progress()
 {
     index=`echo $1*100/$2 | bc`
     len=`echo $1*$width/$2|bc`
-    printf "[%-${width}s][%d%%]\r" "${line:0:$len}" "$index"
+    printf "  [%-${width}s][%d%%]\r" "${line:0:$len}" "$index"
 }
 
 
 printResult()
 {
         cd $path/log/
-        cat $(ls -a | grep .lin | sort -t'.'  -k3,3 -n)
+        cat $(ls -a | grep threadFlag | sort -t'.'  -k3,3 -n)
         cd $path
 }
 
-
-
-#依赖脚本
+genCmd()
+{
 if [[ ! -f $path/_cmd.sh ]]; then
+
 cat << EOF > $path/_cmd.sh
 #!/bin/bash
 
-# \$1: host
-# \$2: cmd
-
-echo "====== [\${1}] ======"
-if [[ -f \$2 ]]; then
-        ssh -o ConnectTimeout=10 root@\$1 < \${2}  2>/dev/null
-else
-        cmd="ssh -o ConnectTimeout=10 root@\$1 \"\${2}\"  2>/dev/null"
-        eval \$cmd
-fi
-echo "--------------------"
-echo "                    "
+	hosts=\$1
+	cmd=\$2
+	echo "====== [\$hosts] ======"
+	if [[ -f \$cmd ]]; then
+	        ssh -o ConnectTimeout=10 root@\$hosts < \$cmd  2>/dev/null
+	else
+	        cmd="ssh -o ConnectTimeout=10 root@\$hosts \"\$cmd\"  2>/dev/null"
+	        eval \$cmd
+	fi
+	echo "--------------------"
+	echo "                    "
+	#statements
 EOF
 fi
 
-#执行权限
-if [[ ! -x $path/_cmd.sh ]]; then
-        chmod a+x $path/_cmd.sh
-fi
+}
+
 
 
 ############ main script #############
@@ -104,32 +102,31 @@ fi
 		echo "$hosts" > /tmp/.t.hosts
 		hosts="/tmp/.t.hosts"
 	fi
-	
+	genCmd
 	
 	# execute task on backgroud
 	ips=$(cat $hosts| tr '\n' ' ')
-	[[ -f $path/log/.t.0.log ]] && rm -f $path/log/.t.*
+	[[ -f $path/log/.threadFlag.0.log ]] && rm -f $path/log/.threadFlag.*
 	
 	for h in $ips
 	do
 		if [[ $h =~ ^#.* ]]; then
 			continue
 		fi
-		if [[ ! -z $exclu && $h == *$exclu* ]]; then
-			continue
-		fi
-		
-		bash $path/_cmd.sh $h "$cmd" $threadFlag > $path/log/.t.$seq.log 2>/dev/null &
+
+		bash $path/_cmd.sh $h "$cmd" $threadFlag > $path/log/.threadFlag.$seq.log 2>/dev/null &
 		seq=$(($seq+1))
 	done
-	
+
 	# monitor task status
-	task_list=$(ps -ef|grep $threadFlag | grep -v 'grep '$$threadFlag | awk '{print $2}')
+	task_list=$(ps -ef|grep $threadFlag | grep -v 'grep' | awk '{print $2}')
+
 	arr=(${task_list[@]})
 	seq=0
 	list=""
 	size=${#arr[@]}
 	doneCnt=0
+
 	progress $doneCnt $size
 
 	while true
@@ -156,7 +153,7 @@ fi
 		seq=$(($seq+1))
 
 		if [[ $seq -gt 30 ]]; then
-			echo "******* timeout *******"
+			echo "******* timeout *******\n"
 			printResult
 			
 			# kill
@@ -170,5 +167,5 @@ fi
 		sleep 1
 	done
 
-	echo " end ----------------"
 }
+
