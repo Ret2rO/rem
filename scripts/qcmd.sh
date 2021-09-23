@@ -119,7 +119,7 @@ fi
 	done
 
 	# monitor task status
-	task_list=$(ps -ef|grep $threadFlag | grep -v 'grep' | awk '{print $2}')
+	task_list=$(ps -ef|grep $threadFlag  | awk '{print $2}')
 
 	arr=(${task_list[@]})
 	seq=0
