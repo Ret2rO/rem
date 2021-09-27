@@ -36,6 +36,7 @@ logFile=$path/log/execute.log
 seq=0
 threadFlag="qcmdflag"$(whoami)$(date +%s)
 
+rm -f $path/log/.threadFlag*
 
 ############ function ############### 
 
