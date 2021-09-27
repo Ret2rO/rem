@@ -17,11 +17,11 @@ fi
 
 path=$(cd $(dirname $0); pwd)
 
-if [ ! -d "${homepath}/log"]; then
+if [ ! -d "${homepath}/log" ]; then
   mkdir -p ${homepath}/log
 fi
 
-if [ ! -d "$homepath"]; then
+if [ ! -d "$homepath" ]; then
   homepath=$path
 fi
 
