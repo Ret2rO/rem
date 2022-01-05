@@ -1,0 +1,49 @@
+#!/bin/bash
+
+
+if [ $# -lt 3 ]; then
+    echo "Usage: $0 srcFile0 srcFile1 ... dest ip/ipfile"
+    exit 1
+fi
+
+#echo "argv num is $#"
+len=$#
+
+args=($*)
+
+idest=$(($len - 2))
+iIp=$(($len - 1))
+dest=${args[${idest}]}
+ip=${args[${iIp}]}
+
+
+if [ ! -f $ip ];then
+    echo "$ip" > ~/.ip
+else
+    cat $ip > ~/.ip
+fi
+
+i=0
+for f in ${args[@]};
+do
+    if [[ $i -eq $idest ]]; then
+        break
+    fi
+    ((i++))
+
+
+    echo "----------- scp [$f]  --------------"
+    while read line
+    do
+        if [[ $line =~ ^#.* ]]; then
+            continue
+        fi
+        cmd="scp $f root@$line:$dest"
+        echo $cmd
+        `$cmd`
+    done < ~/.ip
+    echo "----------- scp [$f] finished ------"
+    echo "  "
+done
+
+rm -f ~/.ip
