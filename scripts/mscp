@@ -8,7 +8,6 @@ fi
 
 #echo "argv num is $#"
 len=$#
-
 args=($*)
 
 idest=$(($len - 2))
@@ -23,27 +22,21 @@ else
     cat $ip > ~/.ip
 fi
 
-i=0
-for f in ${args[@]};
+
+subLen=$(($len-2))
+files=${args[*]:0:${subLen}}
+
+while read line
 do
-    if [[ $i -eq $idest ]]; then
-        break
+    echo "----------- scp [$line]  --------------"
+    if [[ $line =~ ^#.* ]]; then
+        continue
     fi
-    ((i++))
-
-
-    echo "----------- scp [$f]  --------------"
-    while read line
-    do
-        if [[ $line =~ ^#.* ]]; then
-            continue
-        fi
-        cmd="scp $f root@$line:$dest"
-        echo $cmd
-        `$cmd`
-    done < ~/.ip
-    echo "----------- scp [$f] finished ------"
+    cmd="scp $files root@$line:$dest"
+    echo $cmd
+    `$cmd`
+    echo "---------- finished ------"
     echo "  "
-done
+done < ~/.ip
 
 rm -f ~/.ip
