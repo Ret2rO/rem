@@ -10,7 +10,7 @@ while true
 do
     if [ ! -z "$pid" ]; then
         echo -n "`date`" >> /tmp/top.log
-        top -b -n 1 | grep "${flag}" | grep $pid >> /tmp/top.log
+        top -b -n 1 -p $pid | grep "${flag}" >> /tmp/top.log
     fi
     sleep 1
     pid=`ps -ef|grep "${flag}" | grep -v grep | awk '{if($3!=1) print $2}'`
