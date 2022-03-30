@@ -35,6 +35,11 @@ do
     cmd="scp $files root@$line:$dest"
     echo $cmd
     `$cmd`
+    if [ $? -eq 0 ]; then
+        echo " scp success"
+    else
+        echo " scp failed"
+    fi
     echo "---------- finished ------"
     echo "  "
 done < ~/.ip
